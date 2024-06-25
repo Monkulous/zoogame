@@ -61,7 +61,7 @@ function displayInfo(deltaTime) {
     ctx.fillStyle = "#FFFFFF";
     ctx.fillText("(" + Math.floor(player.position.x / 35) + ", " + Math.floor(player.position.y / 35) + ")", 500, 40, 300);
     ctx.fillText(collisions["foreground"].length, 700, 100, 300);
-    ctx.fillText(state.zoom, 900, 40, 300);
+    ctx.fillText("game game game.", 900, 40, 300);
     ctx.fillText(Math.floor(1 / deltaTime), 100, 20, 300);
 };
 
