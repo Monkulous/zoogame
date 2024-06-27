@@ -7,13 +7,13 @@ export function updateAllCollisions(ctx, collisions, player, deltaTime) {
   loadCollisions(collisions["temporary"], player, false);
   collisions.temporary = [];
   collisions["foreground"].forEach((collision) => {
-    if ((collision.position.y + collision.imageSize.y) <= (player.position.y + player.imageSize.y)) {
-      collision.update(ctx, player);
+    if ((collision.position.y + collision.imageSize.y - collision.collisionSize.y) < (player.position.y + player.imageSize.y)) {
+      collision.update(ctx, player, true);
     };
   });
   player.draw(ctx);
   collisions["foreground"].forEach((collision) => {
-    if ((collision.position.y + collision.imageSize.y) > (player.position.y + player.imageSize.y)) {
+    if ((collision.position.y + collision.imageSize.y - collision.collisionSize.y) >= (player.position.y + player.imageSize.y)) {
       collision.update(ctx, player, false);
     };
   });
@@ -70,10 +70,10 @@ export class Collision extends GameObject {
         } else {
           // Colliding top or bottom
           if (otherCollisionPosition.y < this.collisionPosition.y) {
-            otherCollisionPosition.y = this.collisionPosition.y - this.collisionSize.y;
+            other.position.y = this.collisionPosition.y - other.imageSize.y
             other.isColliding.down = true;
           } else {
-            otherCollisionPosition.y = this.collisionPosition.y + this.collisionSize.y;
+            other.position.y = this.collisionPosition.y + this.collisionSize.y - other.imageSize.y + other.collisionSize.y;
             other.isColliding.up = true;
           };
         };

@@ -13,16 +13,16 @@ export function build(collisions, zoom) {
   if (buildStates.all) { //draws build lines if the player is building
     drawBuildLines(zoom);
   }
+  collisions = placeSmallEnclosure(collisions, zoom)
+  return collisions
+}
+
+function placeSmallEnclosure(collisions, zoom) {
   if (leftMousePressed && buildStates.all) { //places an enclosure if the mouse is clicked
     let enclosureType = "smallEnclosure";
     let enclosureImage = new Image();
-    let location = "background";
-    enclosureImage.src = "images/blocks/smallEnclosureBackground.png";
-    collisions = placeBlock(player, collisions, zoom, enclosureType, enclosureImage, location);
-    enclosureType = "smallEnclosure";
-    enclosureImage = new Image();
-    location = "foreground";
-    enclosureImage.src = "images/blocks/smallEnclosureForeground.png";
+    let location = "foreground";
+    enclosureImage.src = "images/blocks/smallEnclosure.png";
     collisions = placeBlock(player, collisions, zoom, enclosureType, enclosureImage, location);
   } else if (!leftMousePressed && buildStates.all) { //places a see-through temporary enclosure before the mouse is clicked
     let enclosureType = "temporaryEnclosure";
