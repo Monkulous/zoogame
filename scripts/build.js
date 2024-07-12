@@ -1,8 +1,9 @@
 import { mousePos, leftMousePressed } from "./input.js";
-import { Collision, loadCollisions } from "./collisions.js";
+import { Enclosure, loadCollisions } from "./collisions.js";
 import { player } from "./player.js";
 import { canvas, ctx } from "./main.js";
 import { UIContainer } from "./ui.js";
+import { Animal } from "./entities.js";
 
 export const buildStates = {
   all: false,
@@ -52,8 +53,8 @@ function placeBlock(player, collisions, zoom, enclosureType, enclosureImage, loc
       x: (Math.floor(intendedPosition.x / 35) * 35) - (35 * 2),
       y: (Math.floor((intendedPosition.y + imageHeight) / 35) * 35 - imageHeight) - (35 * 4)
     };
-
-    let newCollision = new Collision(enclosureType, newBlockPosition, { x: imageWidth, y: imageHeight }, enclosureImage, true, { x: 245, y: 176 });
+    let scale = 1
+    let newCollision = new Enclosure(enclosureType, newBlockPosition, { x: imageWidth * scale, y: imageHeight * scale }, enclosureImage, true, { x: 245 * scale, y: 176 * scale });
 
     if (location === "temporary") { //when the enclosure hasnt been placed yet.
       newCollision.hasCollisions = false;
@@ -65,8 +66,19 @@ function placeBlock(player, collisions, zoom, enclosureType, enclosureImage, loc
         newCollision.hasCollisions = true;
         buildStates.all = false; //reset build states
         UIContainer.style = "cursor: url('images/cursor.png'), auto;"; // reset cursor
+        //
+        /*
+        let tigerImage = new Image()
+        tigerImage.src = "images/tiger.png"
+        let tiger = new Entity("tiger", tigerImage, { x: 0, y: 0 }, { x: 136.1111111111, y: 85.55555556 }, { x: 136.1111111111, y: 35 }, newCollision)
+        collisions["foreground"].push(tiger)
+        */
         collisions = sortCollisions(newCollision, collisions, "foreground");
-      };
+        addTiger(newCollision, collisions, "foreground")
+      } else {
+        ctx.fillStyle = "#FF0000"
+        ctx.fillRect(0, 0, 40, 40)
+      }
     } else if (location === "background") {
       loadCollisions(collisions["background"], newCollision, true);
       if (!(newCollision.isColliding.left || newCollision.isColliding.right | newCollision.isColliding.up | newCollision.isColliding.down)) {
@@ -89,8 +101,7 @@ function sortCollisions(newCollision, collisions, location) { //makes it so that
 }
 
 export function drawBuildLines(zoom) { //draws a grid pattern on the screen, with squares of 35px relative to zoom.
-  const blockSize = 35;
-  const gridSize = blockSize;
+  const gridSize = 35;
 
   const playerX = player.position.x;
   const playerY = player.position.y;
@@ -126,4 +137,18 @@ export function drawBuildLines(zoom) { //draws a grid pattern on the screen, wit
   }
 
   ctx.globalAlpha = 1;
+}
+
+
+function addTiger(newCollision, collisions, location) {
+  let tigerImageRight = new Image()
+  tigerImageRight.src = "images/tigerRight.png"
+  let tigerImageLeft = new Image()
+  tigerImageLeft.src = "images/tigerLeft.png"
+  let tigerImages = { left: [tigerImageLeft], right: [tigerImageRight] }
+
+  for (let i = 0; i < 2; i++) {
+    let tiger = new Animal("tiger", tigerImages, { x: 136.1111111111, y: 85.55555556 }, { x: 136.1111111111, y: 35 }, newCollision)
+    collisions[location].push(tiger)
+  }
 }

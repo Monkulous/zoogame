@@ -1,7 +1,8 @@
 import { player } from "./player.js";
-import { updateAllCollisions, Collision } from "./collisions.js";
+import { updateAllCollisions, Enclosure } from "./collisions.js";
 import { build } from "./build.js";
 import { addButton, UIContainer } from "./ui.js"
+import { Animal } from "./entities.js"
 
 export let state = {
     zoom: 1
@@ -28,7 +29,7 @@ function update(ctx) { //draws each frame
     clearView();
     translate(deltaTime);
     updateAllCollisions(ctx, collisions, player, deltaTime);
-    player.detectMovement(deltaTime);
+    player.update(ctx, deltaTime);
     collisions = build(collisions, state.zoom);
     requestAnimationFrame(() => update(ctx));
 };

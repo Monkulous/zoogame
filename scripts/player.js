@@ -1,5 +1,6 @@
-import { GameObject } from "./gameObjects.js";
-import { pressedKeys } from "./input.js";
+import { Entity } from "./entities.js";
+import { mousePos, pressedKeys } from "./input.js";
+import { canvas, ctx } from "./main.js";
 
 const playerImageSources = { //list of sources for player images
   left: [
@@ -27,25 +28,10 @@ for (const direction in playerImageSources) {
   });
 };
 
-class Player extends GameObject {
-  constructor(position, imageSize, collisionSize) {
-    super("player", playerImages["left"][0], position, imageSize, collisionSize);
-    this.velocity = { x: 0, y: 0 };
-    this.movementSpeed = 200;
-    this.movementType = "idle";
-    this.movementDirection = "left";
-    this.lastAnimationTime = Date.now();
-    this.animationIndex = 0;
-    this.isColliding = {
-      up: false,
-      down: false,
-      left: false,
-      right: false,
-    };
-  };
-  update(ctx, deltaTime) {
-    this.draw(ctx);
-    this.detectMovement(deltaTime);
+class Player extends Entity {
+  constructor(position, images, imageSize, collisionSize) {
+    super("player", images, position, imageSize, collisionSize);
+    this.movementSpeed = 200
   };
   detectMovement(deltaTime) {
     this.velocity = { x: 0, y: 0 };
@@ -65,42 +51,26 @@ class Player extends GameObject {
       this.velocity.x *= deltaTime * this.movementSpeed / magnitude;
       this.velocity.y *= deltaTime * this.movementSpeed / magnitude;
     };
-
     if (pressedKeys.includes("shift")) {
-      this.velocity.x *= 100;
-      this.velocity.y *= 100;
+      this.velocity.x *= 15;
+      this.velocity.y *= 15;
     };
+
+    let letters = ""
+    pressedKeys.forEach((letter) => {
+      letters += letter
+    })
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.fillText(letters, this.position.x + player.imageSize.x / 2, this.position.y, 300);
 
     this.position.x += this.velocity.x;
     this.position.y += this.velocity.y;
-    this.getMovementType();
-    this.getImage();
   };
-  getMovementType() {
-    //getting movement direction
-    if (this.velocity.x != 0) {
-      this.movementDirection = this.velocity.x > 0 ? "right" : "left";
-    };
-    //getting movement type
-    this.movementType = (this.velocity.y === 0 && this.velocity.x === 0) ? "idle" : "walking";
-  };
-  getImage() {
-    let image;
-    if (this.movementType === "idle") {
-      image = playerImages[this.movementDirection][0];
-      this.animationIndex = 0;
-    } else if (this.movementType === "walking") {
-      const currentTime = Date.now();
-      if (currentTime - this.lastAnimationTime > 130) {
-        this.animationIndex = (this.animationIndex >= playerImages[this.movementDirection].length - 1) ? 0 : this.animationIndex + 1;
-        image = playerImages[this.movementDirection][this.animationIndex];
-        this.lastAnimationTime = currentTime;
-      } else {
-        image = playerImages[this.movementDirection][this.animationIndex];
-      };
-    };
-    this.image = image;
+  update(ctx, deltaTime) {
+    this.detectMovement(deltaTime);
+    this.animate()
   };
 };
 
-export const player = new Player({ x: 0, y: 0 }, { x: 70, y: null }, { x: 35, y: 30 });
+export const player = new Player({ x: 0, y: 0 }, playerImages, { x: 70, y: null }, { x: 35, y: 30 });

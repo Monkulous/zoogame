@@ -7,13 +7,13 @@ export function updateAllCollisions(ctx, collisions, player, deltaTime) {
   loadCollisions(collisions["temporary"], player, false);
   collisions.temporary = [];
   collisions["foreground"].forEach((collision) => {
-    if ((collision.position.y + collision.imageSize.y - collision.collisionSize.y) < (player.position.y + player.imageSize.y)) {
+    if ((collision.position.y + collision.imageSize.y - collision.collisionSize.y) + 1 < (player.position.y + player.imageSize.y)) {
       collision.update(ctx, player, true);
     };
   });
   player.draw(ctx);
   collisions["foreground"].forEach((collision) => {
-    if ((collision.position.y + collision.imageSize.y - collision.collisionSize.y) >= (player.position.y + player.imageSize.y)) {
+    if ((collision.position.y + collision.imageSize.y - collision.collisionSize.y) + 1 >= (player.position.y + player.imageSize.y)) {
       collision.update(ctx, player, false);
     };
   });
@@ -42,19 +42,17 @@ export function calculateDistanceFromCollision(collision, otherCollision) {
 }
 
 
-export class Collision extends GameObject {
-  constructor(type, position, imageSize, image, hasCollisions, collisionSize) {
-    super(type, image, position, imageSize, collisionSize)
+class Collision extends GameObject {
+  constructor(name, position, imageSize, image, hasCollisions, collisionSize) {
+    super(name, image, position, imageSize, collisionSize)
     this.hasCollisions = hasCollisions;
   }
   collides(other, includeAllCollisions) {
     if (this.hasCollisions === true || includeAllCollisions) {
-
       const otherCollisionPosition = other.collisionPosition;
       // Calculate overlap in X and Y directions
       let overlapX = Math.min(this.collisionPosition.x + this.collisionSize.x, otherCollisionPosition.x + other.collisionSize.x) - Math.max(this.collisionPosition.x, otherCollisionPosition.x);
       let overlapY = Math.min(this.collisionPosition.y + this.collisionSize.y, otherCollisionPosition.y + other.collisionSize.y) - Math.max(this.collisionPosition.y, otherCollisionPosition.y);
-
       // Check if there's overlap and handle collisions
       if (overlapX >= 0 && overlapY >= 0) {
         // Determine collision direction
@@ -85,3 +83,9 @@ export class Collision extends GameObject {
     this.collides(other, includeAllCollisions);
   };
 };
+
+export class Enclosure extends Collision {
+  constructor(name, position, imageSize, image, hasCollisions, collisionSize) {
+    super(name, position, imageSize, image, hasCollisions, collisionSize);
+  }
+}
