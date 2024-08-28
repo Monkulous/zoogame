@@ -15,8 +15,9 @@ export class GameObject {
     ctx.globalAlpha = this.drawOpacity;
     ctx.drawImage(this.image, this.position.x, this.position.y, this.imageSize.x, this.imageSize.y);
     ctx.globalAlpha = 1;
-    /*
+
     //draw collision boxes
+    /*
     let collisionPosition = {
       x: this.position.x + (this.imageSize.x - this.collisionSize.x) / 2,
       y: this.position.y + this.imageSize.y - this.collisionSize.y

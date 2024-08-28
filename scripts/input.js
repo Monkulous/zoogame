@@ -6,13 +6,29 @@ export const mousePos = { x: 0, y: 0 }
 export let leftMousePressed = false
 export let rightMousePressed = false
 
-export function mouseHoveringOverObject(object, position) {
+export function mouseHoveringOverObject(object, player) { //only uses object's collision box
+  let relativeMousePos = { //mouse position relative to (0, 0)
+    x: (((mousePos.x / state.zoom) - canvas.width / (2 * state.zoom) + player.position.x + player.imageSize.x / 2)),
+    y: (((mousePos.y / state.zoom) - canvas.height / (2 * state.zoom) + player.position.y + player.imageSize.y * 3 / 4))
+  };
+
+  relativeMousePos = { //mouse position relative to player
+    x: relativeMousePos.x - player.position.x,
+    y: relativeMousePos.y - player.position.y
+  }
+
+  let relativeObjectPos = { //object collision position relative to player
+    x: object.collisionPosition.x - player.position.x,
+    y: object.collisionPosition.y - player.position.y
+  }
+
+
   if (mousePos.y > 0 && mousePos.y < canvas.height && mousePos.x > 0 && mousePos.x < canvas.width) {
     return (
-      mousePos.x < position.x + object.size.x &&
-      mousePos.x > position.x &&
-      mousePos.y < position.y + object.size.y &&
-      mousePos.y > position.y
+      relativeMousePos.x < relativeObjectPos.x + object.collisionSize.x &&
+      relativeMousePos.x > relativeObjectPos.x &&
+      relativeMousePos.y < relativeObjectPos.y + object.collisionSize.y &&
+      relativeMousePos.y > relativeObjectPos.y
     )
   } else {
     return false
@@ -58,12 +74,13 @@ addEventListener("mousedown", (event) => {
 
 addEventListener("mouseup", (event) => {
   if (event.button === 0) {
-    leftMousePressed = false
-    console.log(`click at ${mousePos.x}, ${mousePos.y}`)
+    leftMousePressed = false;
+    console.log(`click at ${mousePos.x}, ${mousePos.y}`);
+    state.click = true;
   } else if (event.button === 2) {
-    rightMousePressed = false
-  }
-})
+    rightMousePressed = false;
+  };
+});
 
 addEventListener("wheel", (event) => {
   if (!menuStates.all) {

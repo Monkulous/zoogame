@@ -52,8 +52,8 @@ class Player extends Entity {
       this.velocity.y *= deltaTime * this.movementSpeed / magnitude;
     };
     if (pressedKeys.includes("shift")) {
-      this.velocity.x *= 15;
-      this.velocity.y *= 15;
+      this.velocity.x *= 1.5;
+      this.velocity.y *= 1.5;
     };
 
     let letters = ""
@@ -66,10 +66,6 @@ class Player extends Entity {
 
     this.position.x += this.velocity.x;
     this.position.y += this.velocity.y;
-  };
-  update(ctx, deltaTime) {
-    this.detectMovement(deltaTime);
-    this.animate()
   };
 };
 

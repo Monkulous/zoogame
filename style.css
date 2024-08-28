@@ -113,10 +113,19 @@ body {
   font-size: min(10vw, 10vh);
 }
 
+#enclosure-menu-title {
+  font-size: min(10vw, 10vh);
+}
+
 .open-shop-menu-button {
   cursor: pointer;
   width: calc(100% / 2 - 10px);
   height: calc((24 / 64) * 100%);
   margin: 5px;
   position: relative;
+}
+
+.disabledButton {
+  opacity: 0.4;
+  pointer-events: none;
 }
