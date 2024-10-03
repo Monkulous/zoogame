@@ -1,18 +1,33 @@
 import { player } from "./player.js";
-import { updateAllCollisions, Enclosure } from "./collisions.js";
-import { build } from "./build.js";
-import { addButton, UIContainer } from "./ui.js"
-import { Animal } from "./entities.js"
-import { mouseHoveringOverObject } from "./input.js"
+import { updateAllCollisions, loadCollisions, Enclosure } from "./collisions.js";
+import { checkBuild } from "./build.js";
+import { clearView, translate, displayInfo } from "./canvasUtils.js"
+import { addVisitor } from "./visitor.js";
 
 export const canvas = document.getElementById('game-canvas');
 export const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
+ctx.textAlign = "center"
+ctx.font = "30px Silkscreen";
+ctx.fillStyle = "#FFFFFF";
 
 export let state = {
     zoom: 1,
     click: false //only true the frame when the left mouse button is released
 };
+
+export let zoo = {
+    money: 200000,
+    time: 600,
+    timeSpeed: 1.024,
+    totalHappiness: 0,
+    averageHappiness: 0,
+    numEnclosures: 0,
+    numAnimals: 0,
+    numAnimalTypes: 0,
+    rating: 0,
+    numVisitors: 0
+}
 
 let collisions = {
     background: [],
@@ -21,59 +36,74 @@ let collisions = {
 };
 
 export let animals = []
+export let visitors = []
 
-addButton('open-mainShop-menu-button', 'unhighlightable', 'images/ui/buttons/openMainShop.png', { x: 15.15, y: 100 }, { x: 7.2, y: 12 }, UIContainer); //each pixel is 0.75 x 0.45
-addButton('open-buildInventory-menu-button', 'unhighlightable', 'images/ui/buttons/openBuildMenu.png', { x: 7.2, y: 100 }, { x: 7.2, y: 12 }, UIContainer); //each pixel is 0.75 x 0.45
+addVisitor(100, { x: 0, y: 0 })
 
 let lastTime = Date.now();
 
 function update(ctx) { //draws each frame
     let deltaTime = (Date.now() - lastTime) / 1000; //time from last frame in seconds
+
     lastTime = Date.now();
-    clearView();
-    translate(deltaTime);
-    updateAllCollisions(ctx, collisions, player, deltaTime);
-    updateAllEntities(deltaTime)
-    collisions = build(collisions, state);
-    state.click = false //reset state.click for the next frame
+
+    zoo.time += deltaTime * zoo.timeSpeed
+
+    calculateZooProfit()
+
+    clearView(state); //clears the canvas for a new frame
+    translate(deltaTime, player, state); //translates the canvas, so the player is in the centre.
+
+    updateAllCollisions(ctx, collisions, visitors, player, deltaTime); //draws all collisions and player in correct places
+    collisions = checkBuild(collisions, state); //checks if the player is building and updates the collisions if the player is.
+    updateAllEntities(deltaTime) //update the player and entities (the player is not drawn again)
+
+    calculateZooStats(collisions)
+
+    displayInfo(deltaTime, player, state, zoo)
+
+    state.click = false //reset state.click for the next frame, as it is only true for the frame the left mouse is released
+
     requestAnimationFrame(() => update(ctx));
 };
 
-function translate(deltaTime) { //translates the canvas so the player is always centred
-    ctx.setTransform(1, 0, 0, 1, 0, 0); //reset any previous transformations
-    displayInfo(deltaTime);
-    applyZoom(); //scale the canvas
-    ctx.translate((-player.position.x - player.imageSize.x / 2 + canvas.width / 2), (-player.position.y - player.imageSize.y * 3 / 4 + canvas.height / 2)); //translate the canvas, so the player is always centred
-};
+function updateAllEntities(deltaTime) { //update the animals, so they are in the right position for the next frame
+    animals.forEach((animal) => { animal.update(ctx, deltaTime) }) //draw and move each animal
+    player.update(ctx, deltaTime)
+}
 
-function applyZoom() { //scale the canvas relative to the centre
-    const centreX = canvas.width / 2;
-    const centreY = canvas.height / 2;
-    ctx.translate(centreX, centreY); //move the centre of the canvas to 0,0
-    ctx.scale(state.zoom, state.zoom); //scale by the zoom factor
-    ctx.translate(-centreX, -centreY); //move the centre of the canvas back
-};
+function calculateZooStats(collisions) {
+    let totalHappiness = 0
+    let numEnclosures = 0
+    let numAnimals = 0
+    let animalTypes = []
+    collisions["foreground"].forEach((collision) => {
+        if (collision instanceof Enclosure) {
+            numEnclosures += 1
+            totalHappiness += collision.happiness
+            collision.animals.forEach((animal) => {
+                numAnimals += 1
+                if (!animalTypes.includes(animal.name)) {
+                    animalTypes.push(animal.name)
+                }
+            })
+        }
+    });
+    zoo.totalHappiness = totalHappiness
+    zoo.averageHappiness = Math.floor(totalHappiness / numEnclosures * 20) / 20
+    if (isNaN(zoo.averageHappiness)) { zoo.averageHappiness = 0 }
+    zoo.numEnclosures = numEnclosures
+    zoo.numAnimals = numAnimals
+    zoo.numAnimalTypes = animalTypes.length
 
-function clearView() { //clears the canvas
-    const topLeft = { //calculates the top left point on the canvas
-        x: player.position.x + player.imageSize.x / 2 - canvas.width / 2 / state.zoom - player.velocity.x,
-        y: player.position.y + player.imageSize.y * 3 / 4 - canvas.height / 2 / state.zoom - player.velocity.y,
-    };
-    ctx.clearRect(topLeft.x, topLeft.y, canvas.width / state.zoom, canvas.height / state.zoom); //clear canvas
-};
+    zoo.rating = (Math.min(5, ((zoo.totalHappiness / 150) * zoo.averageHappiness / 100) * zoo.numAnimalTypes * 10))
+}
 
-function displayInfo(deltaTime) {
-    ctx.font = "30px Silkscreen";
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillText("(" + Math.floor(player.position.x / 35) + ", " + Math.floor(player.position.y / 35) + ")", 500, 40, 300);
-    ctx.fillText(collisions["foreground"].length, 700, 100, 300);
-    ctx.fillText(state.zoom, 900, 40, 300);
-    ctx.fillText(Math.floor(1 / deltaTime), 100, 20, 300);
-};
-
-function updateAllEntities(deltaTime) { //update the player and animals, so they are in the right position for the next frame
-    player.update(ctx, deltaTime);
-    animals.forEach((animal) => { animal.update(ctx, deltaTime) })
+function calculateZooProfit() {
+    let hours = (zoo.time / 60) % 24
+    if (hours >= 10 && hours < 17) {
+        zoo.money += ((zoo.rating / 2) * zoo.timeSpeed) * Math.exp(-1 / 5 * (hours - 10))
+    }
 }
 
 update(ctx);

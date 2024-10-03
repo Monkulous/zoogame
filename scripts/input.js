@@ -83,13 +83,13 @@ addEventListener("mouseup", (event) => {
 });
 
 addEventListener("wheel", (event) => {
-  if (!menuStates.all) {
+  if (!menuStates.hasAnyTrue()) {
     if (event.deltaY < 0) {
       if (state.zoom < 2) {
         state.zoom /= 0.9
       }
     } else {
-      if (state.zoom > 0.04) {
+      if (state.zoom > 0.07) {
         state.zoom *= 0.9
       }
     }

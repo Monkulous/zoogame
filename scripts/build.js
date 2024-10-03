@@ -1,100 +1,137 @@
 import { mousePos, leftMousePressed } from "./input.js";
-import { Enclosure, loadCollisions } from "./collisions.js";
+import { Enclosure, loadCollisions, sortCollisions } from "./collisions.js";
 import { player } from "./player.js";
 import { canvas, ctx } from "./main.js";
 import { UIContainer } from "./ui.js";
+import { applyZoom } from "./canvasUtils.js";
+
+const gridSize = 35 //size of the building grid
 
 export const buildStates = {
-  all: false,
-  smallEnclosure: false
+  hasAnyTrue: function() {
+    return Object.values(this)
+      .some(value => value === true);
+  },
+  smallEnclosure: false,
+  mediumEnclosure: false
 };
 
-export function build(collisions, state) {
-  if (buildStates.all) { //draws build lines if the player is building
-    drawBuildLines(state.zoom);
+export const enclosureSources = {
+  smallEnclosure: {
+    background: "images/blocks/smallEnclosureBackgroundOther.png",
+    foreground: "images/blocks/smallEnclosureForegroundOther.png",
+    collisionSize: { x: 245, y: 176 },
+    scale: 7 / 7,
+    size: "small",
+    price: 10000
+  },
+  mediumEnclosure: {
+    background: "images/blocks/smallEnclosureBackgroundOther.png",
+    foreground: "images/blocks/smallEnclosureForegroundOther.png",
+    collisionSize: { x: 245, y: 176 },
+    scale: 16 / 7,
+    size: "medium",
+    price: 20000
+  },
+  largeEnclosure: {
+    background: "images/blocks/smallEnclosureBackgroundOther.png",
+    foreground: "images/blocks/smallEnclosureForegroundOther.png",
+    collisionSize: { x: 245, y: 176 },
+    scale: 25 / 7,
+    size: "large",
+    price: 40000
   }
-  collisions = placeSmallEnclosure(collisions, state)
+};
+
+export function checkBuild(collisions, state) {
+  if (buildStates.hasAnyTrue()) { //draws build lines if the player is building
+    drawBuildGrid(state.zoom)
+    collisions = gatherBuildInfo(collisions, state) //builds an enclosure
+  }
   return collisions
 }
 
-function placeSmallEnclosure(collisions, state) {
-  if (leftMousePressed && buildStates.all) { //places an enclosure if the mouse is clicked
-    let enclosureType = "smallEnclosure";
-    let enclosureImage = new Image();
-    let location = "foreground";
-    enclosureImage.src = "images/blocks/smallEnclosureBackgroundOther.png";
-    let enclosureImageForeground = new Image();
-    enclosureImageForeground.src = "images/blocks/smallEnclosureForegroundOther.png";
-    collisions = placeBlock(player, collisions, state.zoom, enclosureType, enclosureImage, enclosureImageForeground, location);
-  } else if (!leftMousePressed && buildStates.all) { //places a see-through temporary enclosure before the mouse is clicked
-    let enclosureType = "temporaryEnclosure";
-    let enclosureImage = new Image();
-    let location = "temporary";
-    enclosureImage.src = "images/blocks/smallEnclosure.png";
-    let enclosureImageForeground = new Image();
-    enclosureImageForeground.src = "images/blocks/smallEnclosure.png";
-    collisions = placeBlock(player, collisions, state.zoom, enclosureType, enclosureImage, enclosureImageForeground, location);
+function checkBuildType() { //checks which enclosure is being build and returns result.
+  for (let buildType in buildStates) { //loop through each property in buildStates
+    if (buildStates[buildType] && buildType != "hasAnyTrue") { //checks if a specific build type is correct
+      return buildType;
+    }
   }
-  return collisions
 }
 
+function gatherBuildInfo(collisions, state) { //this function is run when an enclosure is placed
 
+  let buildType = checkBuildType() //this checks which enclosure is being placed
+
+  //create image for the foreground and background of the enclosure using enclosureSourcs
+  let buildImageBackground = new Image()
+  buildImageBackground.src = enclosureSources[buildType]["background"]
+  let buildImageForeground = new Image()
+  buildImageForeground.src = enclosureSources[buildType]["foreground"]
+
+
+
+  let location = leftMousePressed ? "foreground" : "temporary" //will store the location in collisions where the enclosure is places (foreground - on the ground, temporary - holds the transparent enclosure, showing the user where it will be placed)
+
+
+  collisions = placeBuilding(player, collisions, state.zoom, buildType, buildImageBackground, buildImageForeground, location); //place the enclosure, using the values gathered.
+  return collisions;
+}
 
 //each tile will be 9*9 pixels and 35*35 on screen.
 
-function placeBlock(player, collisions, zoom, enclosureType, enclosureImage, enclosureImageForeground, location) {
-  enclosureImage.onload = () => {
-    let imageWidth = 245;
-    let imageHeight = enclosureImage.height / enclosureImage.width * imageWidth;
+function placeBuilding(player, collisions, zoom, buildType, buildImageBackground, buildImageForeground, location) {
+  buildImageBackground.onload = () => { //can only access image properties when the image is loaded
+    let scale = enclosureSources[buildType].scale
 
-    let intendedPosition = { //mouse position relative to player for a position of the enclosure to be placed
-      x: (((mousePos.x / zoom) - canvas.width / (2 * zoom) + player.position.x + player.imageSize.x / 2) - imageWidth / 2),
-      y: (((mousePos.y / zoom) - canvas.height / (2 * zoom) + player.position.y + player.imageSize.y * 3 / 4) - imageHeight * 3 / 4)
-    };
+    let imageWidth = buildImageBackground.width * 35 / 9 //ensures pixels in each enclosure will be the same size
+    let imageHeight = buildImageBackground.height / buildImageBackground.width * imageWidth //adjust the height of the image, so pixels are the correct size
 
-    let newBlockPosition = { //the bottom left of the enclosure has to always be divisible by 35.
-      x: (Math.round((intendedPosition.x) / 35) * 35),
-      y: (Math.round((intendedPosition.y + imageHeight) / 35) * 35 - imageHeight)
-    };
 
-    let scale = 1
+    let collisionWidth = enclosureSources[buildType].collisionSize.x
+    let collisionHeight = enclosureSources[buildType].collisionSize.y //use enclosureSources for the collisionSize
 
-    let newCollision = new Enclosure(enclosureType, newBlockPosition, { x: imageWidth * scale, y: imageHeight * scale }, enclosureImage, enclosureImageForeground, true, { x: 245 * scale, y: 176 * scale });
+    imageWidth *= scale
+    imageHeight *= scale
+
+
+    collisionWidth *= scale
+    collisionHeight *= scale
+
+    let collisionSize = { x: collisionWidth, y: collisionHeight }
+
+    let unroundedPosition = { //mouse position relative to player for a position of the enclosure to be placed
+      x: mousePos.x / zoom - canvas.width / 2 / zoom + player.position.x + player.imageSize.x / 2 - (imageWidth / 2),
+      y: mousePos.y / zoom - canvas.height / 2 / zoom + player.position.y + player.imageSize.y * 3 / 4 - (imageHeight * 3 / 4)
+    }
+
+    let roundedPosition = { //makes it so that the bottom left of the enclosure has to always be divisible by 35.
+      x: (Math.round((unroundedPosition.x) / gridSize) * gridSize),
+      y: (Math.round((unroundedPosition.y + imageHeight) / gridSize) * gridSize - imageHeight)
+    }
+
+    let newCollision = new Enclosure(buildType, roundedPosition, { x: imageWidth, y: imageHeight }, buildImageBackground, buildImageForeground, true, collisionSize, enclosureSources[buildType].size) //creates the new collision, but it is not added to the canvas yet
 
     if (location === "temporary") { //when the enclosure hasnt been placed yet.
-      newCollision.hasCollisions = false;
-      newCollision.drawOpacity = 0.4; //see through
-      collisions["temporary"].push(newCollision);
-    } else if (location === "foreground") {
-      loadCollisions(collisions["foreground"], newCollision, true); //detects collisions with the new enclosure position and other collisions, so a new enclosure cannot be placed on top of an old one.
-      if (!(newCollision.isColliding.left || newCollision.isColliding.right | newCollision.isColliding.up | newCollision.isColliding.down)) {
-        newCollision.hasCollisions = true;
-        resetUIContainer()
-        collisions = sortCollisions(newCollision, collisions, "foreground");
+      newCollision.hasCollisions = false
+      newCollision.drawOpacity = 0.4 //see through
+      collisions["temporary"].push(newCollision)
+    } else {
+      loadCollisions(collisions[location], newCollision, true); //detects collisions with the new enclosure position and other collisions, so a new enclosure cannot be placed on top of an old one.
+      let newCollisionColliding = (newCollision.isColliding.left || newCollision.isColliding.right | newCollision.isColliding.up | newCollision.isColliding.down) //true or false value to see if the collision is colliding with something, so wont be placed.
+      if (!newCollisionColliding) {
+        newCollision.hasCollisions = (location === "foreground") ? true : false
+        resetBuildingUI()
+        collisions[location].push(newCollision);
+        //collisions = sortCollisions(collisions[location])
       }
-    } else if (location === "background") {
-      loadCollisions(collisions["background"], newCollision, true);
-      if (!(newCollision.isColliding.left || newCollision.isColliding.right | newCollision.isColliding.up | newCollision.isColliding.down)) {
-        newCollision.hasCollisions = false;
-        resetUIContainer()
-        collisions = sortCollisions(newCollision, collisions, "background");
-      };
     }
-  };
-
+  }
   return collisions;
-}
+};
 
 
-function sortCollisions(newCollision, collisions, location) { //makes it so that collisions are drawn in order, so ones lower down are on top of ones higher up.
-  collisions[location].push(newCollision);
-  collisions[location].sort((a, b) => a.position.y - b.position.y);
-  return collisions;
-}
-
-export function drawBuildLines(zoom) { //draws a grid pattern on the screen, with squares of 35px relative to zoom.
-  const gridSize = 35;
-
+export function drawBuildGrid(zoom) { //draws a grid pattern on the screen, with squares of 35px relative to zoom.
   const playerX = player.position.x;
   const playerY = player.position.y;
   const canvasWidth = canvas.width / zoom
@@ -102,13 +139,6 @@ export function drawBuildLines(zoom) { //draws a grid pattern on the screen, wit
 
   const topLeftX = playerX + player.imageSize.x / 2 - canvasWidth / 2 - player.velocity.x;
   const topLeftY = playerY + player.imageSize.y * 3 / 4 - canvasHeight / 2 - player.velocity.y;
-
-  // ctx.beginPath();
-  // ctx.arc(topLeftX, topLeftY, 17.5, 0, 2 * Math.PI);
-  // ctx.stroke();
-
-  // const lineOpacity = Math.min(1, zoom);
-  // ctx.globalAlpha = lineOpacity;
 
   const startX = Math.floor(topLeftX / gridSize) * gridSize; //closest points to the top left divisible by 35
   const startY = Math.floor(topLeftY / gridSize) * gridSize;
@@ -128,13 +158,14 @@ export function drawBuildLines(zoom) { //draws a grid pattern on the screen, wit
     ctx.stroke();
   }
 
-  ctx.globalAlpha = 1;
 }
-export function resetUIContainer() { //makes it so that buttons arent transparent, and makes all properties in buildStates equal to false, resetting building.
+
+export function resetBuildingUI() { //makes it so that buttons arent transparent, and makes all properties in buildStates equal to false, resetting building.
   UIContainer.classList.remove("disabledButton")
-  for (let key in buildStates) { //sets each property in buildStates to false, closing the building menu
-    if (buildStates.hasOwnProperty(key)) {
-      buildStates[key] = false;
+  document.body.style.cursor = "auto"
+  for (let key in buildStates) {
+    if (key != "hasAnyTrue") {
+      buildStates[key] = false
     }
   }
 }

@@ -1,0 +1,18 @@
+export function addButton(buttonID, classes, src, bottomRightPosition, size, container) {
+  container.innerHTML +=
+    `<img id="${buttonID}" draggable="false" class="${classes}" src="${src}" draggable="false" style="position: absolute; image-rendering: pixelated; cursor: pointer; left: ${bottomRightPosition.x - size.x}%; top: ${bottomRightPosition.y - size.y}%; width: ${size.x}%; height: ${size.y}%;" />`;
+}
+
+export function calculateDistanceFromCollision(collision, otherCollision) {
+  let collisionCenterX = collision.position.x + collision.collisionSize.x / 2;
+  let collisionCenterY = collision.position.y + collision.collisionSize.y / 2;
+
+  let distanceX = Math.abs(collisionCenterX - otherCollision.position.x - otherCollision.collisionSize.x / 2);
+  let distanceY = Math.abs(collisionCenterY - otherCollision.position.y - otherCollision.collisionSize.y / 2);
+  let distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+  return distance;
+}
+
+visitor update function
+
+70b743

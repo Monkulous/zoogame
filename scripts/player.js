@@ -28,10 +28,11 @@ for (const direction in playerImageSources) {
   });
 };
 
-class Player extends Entity {
+export class Player extends Entity {
   constructor(position, images, imageSize, collisionSize) {
     super("player", images, position, imageSize, collisionSize);
-    this.movementSpeed = 200
+    this.movementSpeed = 200;
+    this.frameInterval = 130;
   };
   detectMovement(deltaTime) {
     this.velocity = { x: 0, y: 0 };
@@ -55,7 +56,7 @@ class Player extends Entity {
       this.velocity.x *= 1.5;
       this.velocity.y *= 1.5;
     };
-
+    /*
     let letters = ""
     pressedKeys.forEach((letter) => {
       letters += letter
@@ -63,6 +64,7 @@ class Player extends Entity {
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
     ctx.fillText(letters, this.position.x + player.imageSize.x / 2, this.position.y, 300);
+    */
 
     this.position.x += this.velocity.x;
     this.position.y += this.velocity.y;

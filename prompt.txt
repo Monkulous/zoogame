@@ -1,1 +1,0 @@
-create the start screen for a zoo game. There will be text at the top saying zoo game. there will be mountains in the distance and a sunset.

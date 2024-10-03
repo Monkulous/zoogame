@@ -1,50 +1,79 @@
-import { ctx, animals, state } from "./main.js"
+import { ctx, animals, state, zoo } from "./main.js"
 import { GameObject } from "./gameObjects.js";
-import { player } from "./player.js";
+import { player, Player } from "./player.js";
 import { mouseHoveringOverObject, leftMousePressed } from "./input.js"
 import { Animal } from "./entities.js";
-import { menuStates, toggleMenu } from "./ui.js"
+import { Visitor } from "./visitor.js";
+import { menuExitButton, menuStates, openMenu } from "./ui.js"
 import { buildStates } from "./build.js"
 
-export function updateAllCollisions(ctx, collisions, player, deltaTime) {
-  loadCollisions(collisions["background"], player, false);
-  loadCollisions(collisions["temporary"], player, false);
-  collisions.temporary = [];
-  collisions["foreground"].forEach((collision) => {
-    if ((collision.position.y + collision.imageSize.y) - 1 < (player.position.y + player.imageSize.y - player.collisionSize.y)) {
-      collision.update(ctx, player, true);
-    };
+export function updateAllCollisions(ctx, collisions, visitors, player, deltaTime) {
+  player.isColliding = { //reset player collisions
+    up: false,
+    down: false,
+    left: false,
+    right: false
+  };
+
+  collisions["background"].forEach((collision) => {
+    collision.draw(ctx);
   });
-  player.draw(ctx);
-  collisions["foreground"].forEach((collision) => {
-    if ((collision.position.y + collision.imageSize.y) - 1 >= (player.position.y + player.imageSize.y - player.collisionSize.y)) {
-      collision.update(ctx, player, false);
+
+  collisions["temporary"].forEach((collision) => {
+    collision.draw(ctx);
+  });
+
+  collisions.temporary = [];
+
+  let orderedCollisions = orderCollisions([collisions["foreground"], visitors], player)
+  orderedCollisions.forEach((collision) => {
+
+    if (collision instanceof Visitor) {
+      if (!((zoo.time / 60) % 24 > 17 || (zoo.time / 60) % 24 < 10)) {
+        collision.update(ctx, deltaTime, collisions["foreground"])
+      } else {
+        collision.position = {
+          x: collision.startPositionCoordinates.x,
+          y: collision.startPositionCoordinates.y
+        }
+      }
+    } else if (collision instanceof Collision) {
+      collision.draw(ctx); //draw the collision once
+      collision.update(ctx, player, true) //test if the player is colliding with the collision
+    } else if (collision instanceof Player) {
+      collision.draw(ctx) //the player is not updated yet, because all enclosures need to be checked if the player is colliding first
     };
   });
 };
+
+function orderCollisions(arrays, player) {
+  let orderedCollisions = []
+  arrays.forEach((array) => {
+    array.forEach((collision) => {
+      orderedCollisions.push(collision)
+    })
+  })
+  orderedCollisions.push(player);
+  sortCollisions(orderedCollisions)
+  return orderedCollisions
+}
 
 export function loadCollisions(collisions, other, includeAllCollisions) { //includeAllCollisions ignores whether the player can collide with the collision, and includes every collision when changing the isColliding value
   other.isColliding = {
     up: false,
     down: false,
     left: false,
-    right: false,
+    right: false
   };
   collisions.forEach((collision) => {
     collision.update(ctx, other, includeAllCollisions);
   });
 }
 
-export function calculateDistanceFromCollision(collision, otherCollision) {
-  let collisionCenterX = collision.position.x + collision.collisionSize.x / 2;
-  let collisionCenterY = collision.position.y + collision.collisionSize.y / 2;
-
-  let distanceX = Math.abs(collisionCenterX - otherCollision.position.x - otherCollision.collisionSize.x / 2);
-  let distanceY = Math.abs(collisionCenterY - otherCollision.position.y - otherCollision.collisionSize.y / 2);
-  let distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
-  return distance;
+export function sortCollisions(collisions) { //makes it so that collisions are drawn in order, so ones lower down are on top of ones higher up.
+  collisions.sort((a, b) => (a.position.y + a.imageSize.y) - (b.position.y + b.imageSize.y));
+  return collisions;
 }
-
 
 class Collision extends GameObject {
   constructor(type, position, imageSize, image, hasCollisions, collisionSize) {
@@ -97,16 +126,18 @@ class Collision extends GameObject {
     };
   };
   update(ctx, other, includeAllCollisions) {
-    this.draw(ctx);
     this.collides(other, includeAllCollisions);
   };
 };
 
 export class Enclosure extends Collision { //this will have a list of the animals inside the enclosure and a different draw function, so that it draws the enclosure then it draws the animals then it draws the front railing
-  constructor(name, position, imageSize, image, foregroundImage, hasCollisions, collisionSize) {
+  constructor(name, position, imageSize, image, foregroundImage, hasCollisions, collisionSize, size) {
     super(name, position, imageSize, image, hasCollisions, collisionSize);
     this.foregroundImage = foregroundImage
+    this.size = size
     this.animals = []
+    this.happiness = 0
+    this.desiredNumAnimals = 0
   };
   draw(ctx) { //draws background, then animals, then foreground
     ctx.globalAlpha = this.drawOpacity;
@@ -122,30 +153,60 @@ export class Enclosure extends Collision { //this will have a list of the animal
     ctx.globalAlpha = this.drawOpacity;
     ctx.drawImage(this.foregroundImage, this.position.x, this.position.y, this.imageSize.x, this.imageSize.y);
     ctx.globalAlpha = 1;
+
   };
   update(ctx, other, includeAllCollisions) {
-    this.draw(ctx);
     this.collides(other, includeAllCollisions);
     this.checkInteraction()
+    this.calculateEnclosureHappiness()
   };
   checkInteraction() {
-    if (mouseHoveringOverObject(this, player) && state.click && this.hasCollisions && !menuStates.all && !buildStates.all) {
-      toggleMenu("enclosureMenu", this)
+    if (mouseHoveringOverObject(this, player) && state.click && this.hasCollisions && !menuStates.hasAnyTrue() && !buildStates.hasAnyTrue()) {
+      openMenu("enclosureMenu", this)
     }
+  }
+  calculateEnclosureHappiness() {
+    let enclosureHappiness = 100
+    let numAnimals = this.animals.length
+    if (this.size === "small") {
+      enclosureHappiness *= 0.6
+      this.desiredNumAnimals = 2
+    } else if (this.size === "medium") {
+      enclosureHappiness *= 0.75
+      this.desiredNumAnimals = 4
+    } else {
+      this.desiredNumAnimals = 6
+    }
+    if (this.animals.length > 0) {
+      enclosureHappiness *= Math.exp(-Math.abs(numAnimals - this.desiredNumAnimals))
+    } else {
+      enclosureHappiness = 0
+    }
+    this.happiness = Math.round(enclosureHappiness)
+    //size of enclosure. The bigger the better.
+    //number of animals in enclosure. 2 for small. 4 for medium. 6 for big one.
   }
 };
 
-export function addAnimal(newCollision, animalName) {
-  let random = Math.round(Math.random() * 1) + 1
-  if (random === 1) {
-    addTiger(newCollision)
-  } else if (random === 2) {
-    addGiraffe(newCollision)
+export function addAnimal(newCollision, animalName, money) {
+  if (zoo.money >= money) {
+    zoo.money -= money
+    if (animalName === "giraffe") {
+      addGiraffe(newCollision)
+    } else if (animalName === "tiger") {
+      addTiger(newCollision)
+    } else if (animalName === "elephant") {
+      addElephant(newCollision)
+    }
+    newCollision.calculateEnclosureHappiness()
+    openMenu("enclosureMenu", newCollision)
+  } else {
+    menuExitButton()
+    player.say("I can't afford this", 100)
   }
 }
 
 function addTiger(newCollision) {
-  //let tigerGeneticChanges = Math.floor(Math.random() * 10000)
   let tigerImageRight = new Image()
   tigerImageRight.src = "images/tigerRight.png"
   let tigerImageLeft = new Image()
@@ -167,8 +228,22 @@ function addGiraffe(newCollision) {
   let giraffeImages = { left: [giraffeImageLeft], right: [giraffeImageRight] }
 
   for (let i = 0; i < 1; i++) {
-    let giraffe = new Animal("giraffe", giraffeImages, { x: 373.333333333, y: 299.444444445 }, { x: 136.1111111111, y: 35 }, newCollision)
+    let giraffe = new Animal("giraffe", giraffeImages, { x: 373.333333333, y: 299.444444445 }, { x: 136.1111111111, y: 35 }, newCollision) //multiply number of pixels for x and y by 3.88888889
     newCollision.animals.push(giraffe)
     animals.push(giraffe)
+  }
+}
+
+function addElephant(newCollision) {
+  let elephantImageRight = new Image()
+  elephantImageRight.src = "images/elephantRight.png"
+  let elephantImageLeft = new Image()
+  elephantImageLeft.src = "images/elephantLeft.png"
+  let elephantImages = { left: [elephantImageLeft], right: [elephantImageRight] }
+
+  for (let i = 0; i < 1; i++) {
+    let elephant = new Animal("elephant", elephantImages, { x: 373.333333333, y: 221.666667 }, { x: 210, y: 35 }, newCollision)
+    newCollision.animals.push(elephant)
+    animals.push(elephant)
   }
 }

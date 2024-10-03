@@ -40,7 +40,39 @@ body {
   user-select: none;
 }
 
+.clickable {
+  cursor: pointer;
+}
+
 /*menus*/
+
+.open-menu-button {
+  position: absolute;
+  image-rendering: pixelated;
+  cursor: pointer;
+  left: 0%;
+  top: 88%;
+  width: 7.2%;
+  height: 12%;
+}
+
+#open-buildInventory-menu-button {
+  left: 15.9%;
+}
+
+#open-stats-menu-button {
+  top: 0%;
+  left: 0%;
+  width: 11.4352941176%;
+}
+
+#open-animalInventory-menu-button {
+  left: 7.95%;
+}
+
+#open-mainShop-menu-button {
+  left: 0%;
+}
 
 .menu-container {
   position: absolute;
@@ -88,6 +120,10 @@ body {
   position: relative;
 }
 
+#petAnimal-enclosure-menu-item {
+  width: 100%
+}
+
 .close-menu-button {
   right: calc(11% + 3.25%);
   top: calc(9.375% + 5.4166667%);
@@ -113,8 +149,34 @@ body {
   font-size: min(10vw, 10vh);
 }
 
-#enclosure-menu-title {
+#enclosure-menu-item {
   font-size: min(10vw, 10vh);
+}
+
+#zooStats-menu-item {
+  min-width: 51%;
+}
+
+#animalInfo-menu-item {
+  font-size: min(4vw, 4vh);
+}
+
+.text-menu-item {
+  font-size: min(5vw, 5vh);
+}
+
+#speed-up-time-button {
+  font-size: min(8vw, 8vh);
+  top: 2%;
+  left: 94.8%;
+  color: white;
+}
+
+#slow-down-time-button {
+  font-size: min(8vw, 8vh);
+  top: 2%;
+  left: 80.8%;
+  color: white;
 }
 
 .open-shop-menu-button {
