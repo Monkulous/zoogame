@@ -96,7 +96,7 @@ function calculateZooStats(collisions) {
     zoo.numAnimals = numAnimals
     zoo.numAnimalTypes = animalTypes.length
 
-    zoo.rating = (Math.min(5, ((zoo.totalHappiness / 150) * zoo.averageHappiness / 100) * zoo.numAnimalTypes * 10))
+    zoo.rating = (Math.min(5, ((zoo.totalHappiness / 150) * zoo.averageHappiness / 100) * zoo.numAnimalTypes))
 }
 
 function calculateZooProfit() {
