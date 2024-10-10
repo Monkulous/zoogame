@@ -1,4 +1,4 @@
-import { state, canvas } from "./main.js";
+import { state, canvas, ctx } from "./main.js";
 import { menuStates, menuExitButton } from "./ui.js"
 
 export let pressedKeys = []
@@ -6,7 +6,7 @@ export const mousePos = { x: 0, y: 0 }
 export let leftMousePressed = false
 export let rightMousePressed = false
 
-export function mouseHoveringOverObject(object, player) { //only uses object's collision box
+export function mouseHoveringOverObject(objectPosition, objectSize, player) { //only uses object's collision box
   let relativeMousePos = { //mouse position relative to (0, 0)
     x: (((mousePos.x / state.zoom) - canvas.width / (2 * state.zoom) + player.position.x + player.imageSize.x / 2)),
     y: (((mousePos.y / state.zoom) - canvas.height / (2 * state.zoom) + player.position.y + player.imageSize.y * 3 / 4))
@@ -18,16 +18,15 @@ export function mouseHoveringOverObject(object, player) { //only uses object's c
   }
 
   let relativeObjectPos = { //object collision position relative to player
-    x: object.collisionPosition.x - player.position.x,
-    y: object.collisionPosition.y - player.position.y
+    x: objectPosition.x - player.position.x,
+    y: objectPosition.y - player.position.y
   }
-
 
   if (mousePos.y > 0 && mousePos.y < canvas.height && mousePos.x > 0 && mousePos.x < canvas.width) {
     return (
-      relativeMousePos.x < relativeObjectPos.x + object.collisionSize.x &&
+      relativeMousePos.x < relativeObjectPos.x + objectSize.x &&
       relativeMousePos.x > relativeObjectPos.x &&
-      relativeMousePos.y < relativeObjectPos.y + object.collisionSize.y &&
+      relativeMousePos.y < relativeObjectPos.y + objectSize.y &&
       relativeMousePos.y > relativeObjectPos.y
     )
   } else {

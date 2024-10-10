@@ -1,18 +1,24 @@
-import { Animal, Entity } from "./entities.js"
+import { Entity, Animal, animalPrices } from "./entities.js"
 import { loadCollisions } from "./collisions.js";
-import { zoo, visitors } from "./main.js"
+import { zoo, visitors, state } from "./main.js"
+import { mouseHoveringOverObject } from "./input.js"
+import { player } from "./player.js"
+import { menuStates } from "./ui.js"
+import { buildStates } from "./build.js"
 
 export class Visitor extends Entity {
   constructor(name, images, imageSize, collisionSize, startPositionCoordinates) {
     super(name, images, { x: 0, y: 0 }, imageSize, collisionSize)
+    this.imageHeightConstant = imageSize.y
     this.startPositionCoordinates = startPositionCoordinates
-    this.movementSpeed = 100 * zoo.timeSpeed;
+    this.baseMovementSpeed = 100
+    this.movementSpeed = this.baseMovementSpeed * zoo.timeSpeed;
     this.frameInterval = 130 / zoo.timeSpeed //130ms between frames
     this.startPosition()
     this.waitTime = 0
   };
   update(ctx, deltaTime, collisions) {
-    this.imageSize.y = 126.55555
+    this.imageSize.y = this.imageHeightConstant
     loadCollisions(collisions, this, true)
     this.detectMovement(deltaTime, ctx);
     this.animate()
@@ -30,13 +36,12 @@ export class Visitor extends Entity {
   };
   reachedDestination() {
     this.decideMessage()
-
     this.velocity = { x: 0, y: 0 }
     this.pickRandomLocation(); //create new location
     this.waitTime = Math.floor(Math.random() * 100) + 10 //wait for a period
   }
   detectMovement(deltaTime, ctx) {
-    this.movementSpeed = 100 * zoo.timeSpeed //update, so change due to timeSpeed
+    this.movementSpeed = this.baseMovementSpeed * zoo.timeSpeed //update, so change due to timeSpeed
     this.frameInterval = 130 / zoo.timeSpeed
     if ((zoo.time / 60) % 24 > 16.9) {
       this.randomLocation = { x: this.startPositionCoordinates.x, y: this.startPositionCoordinates.y }
@@ -44,6 +49,7 @@ export class Visitor extends Entity {
     if (this.waitTime > 0) {
       this.say(ctx)
       this.waitTime -= 1 * zoo.timeSpeed //count down wait time if its not 0
+
     } else {
       if ((this.isColliding.left || this.isColliding.right | this.isColliding.up | this.isColliding.down)) {
         this.pickRandomLocation()
@@ -59,7 +65,10 @@ export class Visitor extends Entity {
   decideMessage() {
     let randomChance = Math.random()
     if (randomChance > 0.85) {
-      if (zoo.numAnimals === 0) {
+      if (zoo.numEscapedAnimals > 0) {
+        this.message = "ahhhh"
+        zoo.rating = 0
+      } else if (zoo.numAnimals === 0) {
         this.message = emptyZooVisitorMessages[Math.floor(Math.random() * emptyZooVisitorMessages.length)]
       } else if (zoo.averageHappiness < 40) {
         this.message = negativeVisitorMessages[Math.floor(Math.random() * negativeVisitorMessages.length)]
@@ -72,7 +81,7 @@ export class Visitor extends Entity {
       this.message = ""
     }
   }
-};
+}
 
 const negativeVisitorMessages = [
   "this zoo is terrible",
@@ -164,3 +173,42 @@ export function addVisitor(numVisitors, position) {
     visitors.push(visitor)
   }
 }
+
+export class EscapedAnimal extends Visitor {
+  constructor(name, images, imageSize, collisionSize, startPositionCoordinates) {
+    super(name, images, imageSize, collisionSize, startPositionCoordinates)
+    this.baseMovementSpeed = 250
+  }
+  pickRandomLocation() {
+    this.randomLocation = { //picks any random location in a square around the visitor
+      x: (this.position.x) + (Math.random() * (15000) - 7500),
+      y: (this.position.y) + (Math.random() * (15000) - 7500)
+    };
+  };
+  update(ctx, deltaTime) {
+    this.imageSize.y = this.imageHeightConstant
+    this.detectMovement(deltaTime, ctx);
+    this.animate()
+    this.draw(ctx)
+    //this.checkInteraction()
+  };
+  /*
+  checkInteraction() {
+    if (mouseHoveringOverObject({ x: this.collisionPosition.x, y: this.position.y }, { x: this.collisionSize.x, y: this.imageSize.y }, player)) {
+      player.say("i need to grab that " + this.type, 10)
+      document.body.style.cursor = "crosshair"
+
+      if (state.click && !menuStates.hasAnyTrue() && !buildStates.hasAnyTrue()) {
+        zoo.money += animalPrices[this.name] * 0.8
+        visitors.splice(visitors.indexOf(this), 1)
+        document.body.style.cursor = "auto"
+      }
+    } else {
+      document.body.style.cursor = "auto"
+    };
+  };
+  */
+  reachedDestination() {
+    visitors.splice(visitors.indexOf(this), 1)
+  }
+};

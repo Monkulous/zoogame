@@ -1,8 +1,9 @@
 import { buildStates, resetBuildingUI, enclosureSources } from "./build.js"
-import { addAnimal } from "./collisions.js"
-import { zoo } from "./main.js"
+import { addAnimal, createAnimal, petAnimals } from "./collisions.js"
+import { zoo, collisions, state } from "./main.js"
 import { player } from "./player.js"
 import { slowDownTime, speedUpTime } from "./canvasUtils.js"
+import { animalPrices } from "./entities.js"
 
 export const UIContainer = document.getElementById('ui-container');
 
@@ -57,7 +58,7 @@ let menuElements = { //this stores the HTML elements for different menus. These 
     `<img class="menu-item unhighlightable clickable" id="giraffe-enclosure-pick-menu-item" src="images/ui/shop/giraffeShopCard.png" draggable="false"/>`,
     `<img class="menu-item unhighlightable clickable" id="tiger-enclosure-pick-menu-item" src="images/ui/shop/tigerShopCard.png" draggable="false"/>`,
     `<img class="menu-item unhighlightable clickable" id="elephant-enclosure-pick-menu-item" src="images/ui/shop/elephantShopCard.png" draggable="false"/>`,
-    `<img id="open-animalShop-menu-button" class="unhighlightable open-shop-menu-button" draggable="false" class="unhighlightable" src="images/ui/shop/animalShopCard.png" draggable="false"/>`
+    `<img id="open-animalInfo-enclosure-button" class="unhighlightable open-shop-menu-button" draggable="false" class="unhighlightable" src="images/ui/shop/animalShopCard.png" draggable="false"/>`
   ],
   zooStats: [],
   tigerInfo: [
@@ -70,7 +71,7 @@ let menuElements = { //this stores the HTML elements for different menus. These 
   ],
   elephantInfo: [
     `<h1 id="animalInfo-menu-title" class="unhighlightable menu-title">Elephant</h1>`,
-    `<h1 id="animalInfo-menu-item" class="unhighlightable ">Status: Many species are endangered<br>Population: 450,000 in the wild<br><br>African elephant habitat has declined by over 50% since 1979, while Asian elephants are now restricted to just 15% of their original range.<br><br>Add in growing human-wildlife conflict and an upsurge in ivory poaching in recent years and it's easy to see why elephants are under threat.<br><br>While some populations of African elephant are secure and expanding, primarily in southern Africa, numbers are continuing to fall in other areas, particularly in central Africa and parts of East Africa. With an estimated 415,000 elephants left on the continent, the species is regarded as vulnerable, although certain populations are being poached towards extinction.<br><br>Asian elephant numbers have dropped by at least 50% over the last three generations, and they’re still in decline today. With only 40,000-50,000 left in the wild, the species is classified as endangered.<br><br>And it is critical to conserve both African and Asian elephants since they play such a vital role in their ecosystems as well as contributing towards tourism and community incomes in many areas.<br><br>Reference: <a href="https://wwf.panda.org/discover/knowledge_hub/endangered_species/elephants/">WWF</a></h1>`
+    `<h1 id="animalInfo-menu-item" class="unhighlightable ">Status: Many species are endangered<br>Population: 450,000 in the wild<br><br>African elephant habitat has declined by over 50% since 1979, while Asian elephants are now restricted to just 15% of their original range.<br><br>Add in growing human-wildlife conflict and an upsurge in ivory poaching in recent years and it's easy to see why elephants are under threat.<br><br>While some populations of African elephant are secure and expanding, primarily in southern Africa, numbers are continuing to fall in other areas, particularly in central Africa and parts of East Africa. With an estimated 415,000 elephants left on the continent, the species is regarded as vulnerable, although certain populations are being poached towards extinction.<br><br>Asian elephant numbers have dropped by at least 50% over the last three generations, and they’re still in decline today. With only 40,000-50,000 left in the wild, the species is classified as endangered.<br><br>It is critical to conserve both African and Asian elephants since they play such a vital role in their ecosystems as well as contributing towards tourism and community incomes in many areas.<br><br>Reference: <a href="https://wwf.panda.org/discover/knowledge_hub/endangered_species/elephants/">WWF</a></h1>`
   ]
 }
 
@@ -103,22 +104,27 @@ export function openMenu(menuType, enclosure) {
 
 function updateEnclosureUI(enclosure) {
   let animalsPlural = (enclosure.animals.length === 1) ? "animal" : "animals"
+  let hoursPlural = (Math.floor(enclosure.timeSinceLastPet / 60) === 1) ? "hour" : "hours"
   menuElements["enclosureMenu"] = [
     `<h1 id="enclosure-menu-title" class="unhighlightable menu-title">Enclosure</h1>`,
-    `<h1 id="enclosure-menu-info" class="unhighlightable menu-title text-menu-item">Best number of animals: ${enclosure.desiredNumAnimals}</h1>`,
-    `<h1 id="enclosure-menu-item" class="unhighlightable menu-title">${enclosure.animals.length} ${animalsPlural}</h1>`,
-    `<h1 id="enclosure-menu-item" class="unhighlightable menu-title">Happiness: ${enclosure.happiness}%</h1>`
+    `<h1 id="enclosure-menu-info" class="unhighlightable text-menu-item">Best number of animals: ${enclosure.desiredNumAnimals}</h1>`,
+    `<h1 id="enclosure-menu-info" class="unhighlightable text-menu-item">Time since last pet: ${Math.floor(enclosure.timeSinceLastPet / 60)} ${hoursPlural}</h1>`,
+    `<h1 id="enclosure-menu-info" class="unhighlightable text-menu-item"">${enclosure.animals.length} ${animalsPlural}</h1>`,
+    `<h1 id="enclosure-menu-info" class="unhighlightable text-menu-item"">Happiness: ${enclosure.happiness}%</h1>`,
+    `<img class="menu-item unhighlightable clickable" id="petAnimal-enclosure-menu-item" src="images/ui/buttons/petAnimalsButton.png" draggable="false"/>`
   ] //reset the display for the enclosure menu
   enclosure.animals.forEach((animal) => {
     menuElements["enclosureMenu"].push(`<img class="menu-item unhighlightable clickable" id="${animal.name}-enclosure-menu-item" src="${animal.cardSrc}" draggable="false"/>`)
   }) //add each different animal in the enclosure to the enclosure display
 
-  menuElements["enclosureMenu"].push(`<img class="menu-item unhighlightable clickable" id="addAnimal-enclosure-menu-item" src="images/ui/shop/addAnimalCard.png" draggable="false"/>`) //HTML for a button to add a new animal to the enclosure
+  menuElements["enclosureMenu"].push(`<img class="menu-item unhighlightable clickable" id="addAnimal-enclosure-menu-item" src="images/ui/shop/addAnimalCard.png" draggable="false"/>`, `<img class="menu-item unhighlightable clickable" id="remove-enclosure-button" src="images/ui/shop/removeEnclosureCard.png" draggable="false"/>`) //HTML for a button to add a new animal to the enclosure
 
   focusEnclosure = enclosure //focusEnclosure is a global variable, so this allows the enclosure to be edited anywhere in this file.
 }
 
 function updateZooStatsUI(zoo) {
+  let daysPlural = (Math.floor(zoo.time / 60 / 24) === 1) ? "day" : "days"
+  let hoursPlural = (Math.floor((zoo.time / 60) % 24) === 1) ? "hour" : "hours"
   menuElements["zooStats"] = [
     `<h1 id="zooStats-menu-title" class="unhighlightable menu-title">zoo stats</h1>`,
     `<h1 id="zooStats-menu-item" class="unhighlightable text-menu-item">money:  £${Math.floor(zoo.money * 100) / 100}</h1>`,
@@ -127,11 +133,13 @@ function updateZooStatsUI(zoo) {
     `<h1 id="zooStats-menu-item" class="unhighlightable text-menu-item">Average Happiness:  ${zoo.averageHappiness}%</h1>`,
     `<h1 id="zooStats-menu-item" class="unhighlightable text-menu-item">Number of animals:  ${zoo.numAnimals}</h1>`,
     `<h1 id="zooStats-menu-item" class="unhighlightable text-menu-item">Types of animals:  ${zoo.numAnimalTypes}</h1>`,
-    `<h1 id="zooStats-menu-item" class="unhighlightable text-menu-item">Number of enclosures:  ${zoo.numEnclosures}</h1>`]
+    `<h1 id="zooStats-menu-item" class="unhighlightable text-menu-item">Number of enclosures:  ${zoo.numEnclosures}</h1>`,
+    `<h1 id="zooStats-menu-item" class="unhighlightable text-menu-item">Time in zoo:  ${Math.floor(((zoo.time - 600) / 60) / 24)} ${daysPlural} ${Math.floor(((zoo.time - 600) / 60) % 24)} ${hoursPlural}</h1>`]
   openMenu("zooStats")
 }
 
 export function menuExitButton() {
+  state.click = false
   for (let menuType in menuStates) { //loop through each property in menuStates
     if (menuStates[menuType] === true && menuType != "hasAnyTrue") { //checks if a specific menu is open 
       closeMenu(menuType); //closes that menu
@@ -171,10 +179,22 @@ function startBuilding(buildType, money) {
   }
 }
 
+function removeEnclosure(enclosure) {
+  zoo.money += enclosure.price * 0.8
+  enclosure.animals.forEach((animal) => {
+    zoo.money += animalPrices[animal.name] * 0.8
+  })
+  if (collisions["foreground"].includes(enclosure)) {
+    collisions["foreground"].splice(collisions["foreground"].indexOf(enclosure), 1)
+    menuExitButton()
+  }
+}
+
 const buttonControls = {
   'open-mainShop-menu-button': () => openMenu("mainShop"),
   'open-buildShop-menu-button': () => openMenu("buildShop"),
-  'open-animalShop-menu-button': () => openMenu("animalShop"),
+  'open-animalInfo-menu-button': () => openMenu("animalShop"),
+  'open-animalInfo-enclosure-button': () => openMenu("animalShop"),
   'close-menu-button': menuExitButton,
   'open-buildInventory-menu-button': () => openMenu("buildInventory"),
   'open-animalInventory-menu-button': () => openMenu("animalInventory"),
@@ -182,15 +202,17 @@ const buttonControls = {
   'medium-enclosure-buildInventory-menu-item': () => startBuilding('mediumEnclosure', 20000),
   'large-enclosure-buildInventory-menu-item': () => startBuilding('largeEnclosure', 40000),
   'addAnimal-enclosure-menu-item': () => openMenu("chooseAnimal"),
-  'giraffe-enclosure-pick-menu-item': () => addAnimal(focusEnclosure, "giraffe", 50000),
-  'tiger-enclosure-pick-menu-item': () => addAnimal(focusEnclosure, "tiger", 40000),//focusEnclosure is the enclosure whose menu is currently open
-  'elephant-enclosure-pick-menu-item': () => addAnimal(focusEnclosure, "elephant", 50000),
+  'giraffe-enclosure-pick-menu-item': () => addAnimal(focusEnclosure, "giraffe", animalPrices["giraffe"]),
+  'tiger-enclosure-pick-menu-item': () => addAnimal(focusEnclosure, "tiger", animalPrices["tiger"]),//focusEnclosure is the enclosure whose menu is currently open
+  'elephant-enclosure-pick-menu-item': () => addAnimal(focusEnclosure, "elephant", animalPrices["elephant"]),
   'open-stats-menu-button': () => updateZooStatsUI(zoo),
   'slow-down-time-button': slowDownTime,
   'speed-up-time-button': speedUpTime,
   'tiger-enclosure-menu-item': () => openMenu("tigerInfo"),
   'giraffe-enclosure-menu-item': () => openMenu("giraffeInfo"),
-  'elephant-enclosure-menu-item': () => openMenu("elephantInfo")
+  'elephant-enclosure-menu-item': () => openMenu("elephantInfo"),
+  'remove-enclosure-button': () => removeEnclosure(focusEnclosure),
+  'petAnimal-enclosure-menu-item': () => petAnimals(focusEnclosure)
 }
 UIContainer.addEventListener('click', function(event) {
   if (event.target.id in buttonControls) {

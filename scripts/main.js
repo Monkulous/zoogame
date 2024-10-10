@@ -1,8 +1,8 @@
 import { player } from "./player.js";
 import { updateAllCollisions, loadCollisions, Enclosure } from "./collisions.js";
-import { checkBuild } from "./build.js";
+import { checkBuild, enclosureSources } from "./build.js";
 import { clearView, translate, displayInfo } from "./canvasUtils.js"
-import { addVisitor } from "./visitor.js";
+import { addVisitor, EscapedAnimal } from "./visitor.js";
 
 export const canvas = document.getElementById('game-canvas');
 export const ctx = canvas.getContext('2d');
@@ -17,7 +17,7 @@ export let state = {
 };
 
 export let zoo = {
-    money: 200000,
+    money: 20000000,
     time: 600,
     timeSpeed: 1.024,
     totalHappiness: 0,
@@ -26,10 +26,11 @@ export let zoo = {
     numAnimals: 0,
     numAnimalTypes: 0,
     rating: 0,
-    numVisitors: 0
+    numVisitors: 0,
+    numEscapedAnimals: 0
 }
 
-let collisions = {
+export let collisions = {
     background: [],
     foreground: [],
     temporary: []
@@ -75,11 +76,16 @@ function updateAllEntities(deltaTime) { //update the animals, so they are in the
 function calculateZooStats(collisions) {
     let totalHappiness = 0
     let numEnclosures = 0
+    let numAnimalEnclosures = 0
     let numAnimals = 0
     let animalTypes = []
+    let numEscapedAnimals = 0
     collisions["foreground"].forEach((collision) => {
         if (collision instanceof Enclosure) {
             numEnclosures += 1
+            if (collision.animals.length > 0) {
+                numAnimalEnclosures += 1
+            }
             totalHappiness += collision.happiness
             collision.animals.forEach((animal) => {
                 numAnimals += 1
@@ -89,14 +95,37 @@ function calculateZooStats(collisions) {
             })
         }
     });
+
     zoo.totalHappiness = totalHappiness
-    zoo.averageHappiness = Math.floor(totalHappiness / numEnclosures * 20) / 20
+    zoo.averageHappiness = Math.floor(totalHappiness / numAnimalEnclosures * 20) / 20
     if (isNaN(zoo.averageHappiness)) { zoo.averageHappiness = 0 }
     zoo.numEnclosures = numEnclosures
     zoo.numAnimals = numAnimals
     zoo.numAnimalTypes = animalTypes.length
 
-    zoo.rating = (Math.min(5, ((zoo.totalHappiness / 150) * zoo.averageHappiness / 100) * zoo.numAnimalTypes * 10))
+    zoo.rating = (Math.min(5, ((zoo.totalHappiness / 150) * zoo.averageHappiness / 100) * zoo.numAnimalTypes))
+
+
+    visitors.forEach((visitor) => {
+        if (visitor instanceof EscapedAnimal) {
+            numEscapedAnimals += 1
+        }
+    })
+
+    zoo.numEscapedAnimals = numEscapedAnimals
+
+    if (zoo.numEscapedAnimals > 0) {
+        zoo.rating = 0
+        visitors.forEach((visitor) => {
+            visitor.baseMovementSpeed = 500
+            visitor.waitTime = 0
+            visitor.say(ctx)
+        })
+    } else {
+        visitors.forEach((visitor) => {
+            visitor.baseMovementSpeed = 100
+        })
+    }
 }
 
 function calculateZooProfit() {

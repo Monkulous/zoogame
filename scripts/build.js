@@ -110,7 +110,7 @@ function placeBuilding(player, collisions, zoom, buildType, buildImageBackground
       y: (Math.round((unroundedPosition.y + imageHeight) / gridSize) * gridSize - imageHeight)
     }
 
-    let newCollision = new Enclosure(buildType, roundedPosition, { x: imageWidth, y: imageHeight }, buildImageBackground, buildImageForeground, true, collisionSize, enclosureSources[buildType].size) //creates the new collision, but it is not added to the canvas yet
+    let newCollision = new Enclosure(buildType, roundedPosition, { x: imageWidth, y: imageHeight }, buildImageBackground, buildImageForeground, true, collisionSize, enclosureSources[buildType].size, enclosureSources[buildType].price) //creates the new collision, but it is not added to the canvas yet
 
     if (location === "temporary") { //when the enclosure hasnt been placed yet.
       newCollision.hasCollisions = false

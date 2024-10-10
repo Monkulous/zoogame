@@ -1,9 +1,9 @@
-import { ctx, animals, state, zoo } from "./main.js"
+import { animals, ctx, state, zoo, visitors } from "./main.js"
 import { GameObject } from "./gameObjects.js";
 import { player, Player } from "./player.js";
 import { mouseHoveringOverObject, leftMousePressed } from "./input.js"
 import { Animal } from "./entities.js";
-import { Visitor } from "./visitor.js";
+import { EscapedAnimal, Visitor } from "./visitor.js";
 import { menuExitButton, menuStates, openMenu } from "./ui.js"
 import { buildStates } from "./build.js"
 
@@ -39,7 +39,7 @@ export function updateAllCollisions(ctx, collisions, visitors, player, deltaTime
       }
     } else if (collision instanceof Collision) {
       collision.draw(ctx); //draw the collision once
-      collision.update(ctx, player, true) //test if the player is colliding with the collision
+      collision.update(ctx, player, true, deltaTime) //test if the player is colliding with the collision
     } else if (collision instanceof Player) {
       collision.draw(ctx) //the player is not updated yet, because all enclosures need to be checked if the player is colliding first
     };
@@ -125,19 +125,21 @@ class Collision extends GameObject {
       };
     };
   };
-  update(ctx, other, includeAllCollisions) {
+  update(ctx, other, includeAllCollisions, deltaTime) {
     this.collides(other, includeAllCollisions);
   };
 };
 
 export class Enclosure extends Collision { //this will have a list of the animals inside the enclosure and a different draw function, so that it draws the enclosure then it draws the animals then it draws the front railing
-  constructor(name, position, imageSize, image, foregroundImage, hasCollisions, collisionSize, size) {
+  constructor(name, position, imageSize, image, foregroundImage, hasCollisions, collisionSize, size, price) {
     super(name, position, imageSize, image, hasCollisions, collisionSize);
     this.foregroundImage = foregroundImage
     this.size = size
     this.animals = []
     this.happiness = 0
     this.desiredNumAnimals = 0
+    this.price = price
+    this.timeSinceLastPet = 0
   };
   draw(ctx) { //draws background, then animals, then foreground
     ctx.globalAlpha = this.drawOpacity;
@@ -155,13 +157,19 @@ export class Enclosure extends Collision { //this will have a list of the animal
     ctx.globalAlpha = 1;
 
   };
-  update(ctx, other, includeAllCollisions) {
+  update(ctx, other, includeAllCollisions, deltaTime) {
     this.collides(other, includeAllCollisions);
     this.checkInteraction()
     this.calculateEnclosureHappiness()
+    if (!isNaN(deltaTime)) {
+      this.timeSinceLastPet += deltaTime * zoo.timeSpeed
+    }
+    if (this.happiness <= 0.5 && this.animals.length > 0) {
+      this.animalsEscape()
+    }
   };
   checkInteraction() {
-    if (mouseHoveringOverObject(this, player) && state.click && this.hasCollisions && !menuStates.hasAnyTrue() && !buildStates.hasAnyTrue()) {
+    if (mouseHoveringOverObject(this.collisionPosition, this.collisionSize, player) && state.click && this.hasCollisions && !menuStates.hasAnyTrue() && !buildStates.hasAnyTrue()) {
       openMenu("enclosureMenu", this)
     }
   }
@@ -179,6 +187,7 @@ export class Enclosure extends Collision { //this will have a list of the animal
     }
     if (this.animals.length > 0) {
       enclosureHappiness *= Math.exp(-Math.abs(numAnimals - this.desiredNumAnimals))
+      enclosureHappiness = Math.max(0, enclosureHappiness - this.timeSinceLastPet / 720) //every 12 minutes animals are not pet, the happiness will decrease by 1%
     } else {
       enclosureHappiness = 0
     }
@@ -186,18 +195,21 @@ export class Enclosure extends Collision { //this will have a list of the animal
     //size of enclosure. The bigger the better.
     //number of animals in enclosure. 2 for small. 4 for medium. 6 for big one.
   }
+  animalsEscape() {
+    this.animals.forEach((animal) => {
+      createAnimal(animal.name, this, "escaped", animal.position)
+      animals.splice(animals.indexOf(animal), 1)
+    })
+    this.animals = []
+  }
 };
 
 export function addAnimal(newCollision, animalName, money) {
   if (zoo.money >= money) {
+    newCollision.timeSinceLastPet = 0
+    newCollision.calculateEnclosureHappiness()
     zoo.money -= money
-    if (animalName === "giraffe") {
-      addGiraffe(newCollision)
-    } else if (animalName === "tiger") {
-      addTiger(newCollision)
-    } else if (animalName === "elephant") {
-      addElephant(newCollision)
-    }
+    createAnimal(animalName, newCollision, "animal")
     newCollision.calculateEnclosureHappiness()
     openMenu("enclosureMenu", newCollision)
   } else {
@@ -206,44 +218,42 @@ export function addAnimal(newCollision, animalName, money) {
   }
 }
 
-function addTiger(newCollision) {
-  let tigerImageRight = new Image()
-  tigerImageRight.src = "images/tigerRight.png"
-  let tigerImageLeft = new Image()
-  tigerImageLeft.src = "images/tigerLeft.png"
-  let tigerImages = { left: [tigerImageLeft], right: [tigerImageRight] }
+let animalSizes = {
+  tiger: {
+    imageSize: { x: 136.1111111111, y: 85.55555556 },
+    collisionSize: { x: 136.1111111111, y: 35 }
+  },
+  giraffe: {
+    imageSize: { x: 373.333333333, y: 299.444444445 },
+    collisionSize: { x: 136.1111111111, y: 35 }
+  },
+  elephant: {
+    imageSize: { x: 373.333333333, y: 221.666667 },
+    collisionSize: { x: 210, y: 35 }
+  },
+}
 
-  for (let i = 0; i < 1; i++) {
-    let tiger = new Animal("tiger", tigerImages, { x: 136.1111111111, y: 85.55555556 }, { x: 136.1111111111, y: 35 }, newCollision)
-    newCollision.animals.push(tiger)
-    animals.push(tiger)
+export function createAnimal(name, enclosure, type, position) {
+  let animalImageRight = new Image()
+  animalImageRight.src = "images/" + name + "Right.png"
+  let animalImageLeft = new Image()
+  animalImageLeft.src = "images/" + name + "Left.png"
+  let animalImages = { left: [animalImageLeft], right: [animalImageRight] }
+  console.log(animalImageRight.src)
+
+  if (type === "animal") {
+    let animal = new Animal(name, animalImages, animalSizes[name].imageSize, animalSizes[name].collisionSize, enclosure)
+    enclosure.animals.push(animal)
+    animals.push(animal)
+  } else if (type === "escaped") {
+    let animal = new EscapedAnimal(name, animalImages, animalSizes[name].imageSize, animalSizes[name].collisionSize, position)
+    animal.startPositionCoordinates = { x: 0, y: 0 }
+    visitors.push(animal)
   }
 }
 
-function addGiraffe(newCollision) {
-  let giraffeImageRight = new Image()
-  giraffeImageRight.src = "images/giraffeRight.png"
-  let giraffeImageLeft = new Image()
-  giraffeImageLeft.src = "images/giraffeLeft.png"
-  let giraffeImages = { left: [giraffeImageLeft], right: [giraffeImageRight] }
-
-  for (let i = 0; i < 1; i++) {
-    let giraffe = new Animal("giraffe", giraffeImages, { x: 373.333333333, y: 299.444444445 }, { x: 136.1111111111, y: 35 }, newCollision) //multiply number of pixels for x and y by 3.88888889
-    newCollision.animals.push(giraffe)
-    animals.push(giraffe)
-  }
-}
-
-function addElephant(newCollision) {
-  let elephantImageRight = new Image()
-  elephantImageRight.src = "images/elephantRight.png"
-  let elephantImageLeft = new Image()
-  elephantImageLeft.src = "images/elephantLeft.png"
-  let elephantImages = { left: [elephantImageLeft], right: [elephantImageRight] }
-
-  for (let i = 0; i < 1; i++) {
-    let elephant = new Animal("elephant", elephantImages, { x: 373.333333333, y: 221.666667 }, { x: 210, y: 35 }, newCollision)
-    newCollision.animals.push(elephant)
-    animals.push(elephant)
-  }
+export function petAnimals(enclosure) {
+  enclosure.timeSinceLastPet = 0
+  enclosure.calculateEnclosureHappiness()
+  openMenu("enclosureMenu", enclosure)
 }

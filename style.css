@@ -66,7 +66,7 @@ body {
   width: 11.4352941176%;
 }
 
-#open-animalInventory-menu-button {
+#open-animalInfo-menu-button {
   left: 7.95%;
 }
 
@@ -97,6 +97,7 @@ body {
 .menu-title {
   text-align: center;
   width: 100%;
+  margin: 0%;
   position: relative;
 }
 
@@ -159,6 +160,11 @@ body {
 
 #animalInfo-menu-item {
   font-size: min(4vw, 4vh);
+}
+
+#enclosure-menu-info {
+  text-align: center;
+  width: 100%;
 }
 
 .text-menu-item {

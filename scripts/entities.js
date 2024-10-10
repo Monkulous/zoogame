@@ -1,5 +1,5 @@
 import { GameObject } from "./gameObjects.js";
-import { zoo } from "./main.js"
+import { zoo, visitors } from "./main.js"
 
 export class Entity extends GameObject {
   constructor(name, images, position, imageSize, collisionSize) {
@@ -91,6 +91,12 @@ const animalCardSources = {
   "tiger": "images/ui/shop/tigerShopCard.png",
   "giraffe": "images/ui/shop/giraffeShopCard.png",
   "elephant": "images/ui/shop/elephantShopCard.png"
+}
+
+export const animalPrices = {
+  "tiger": 40000,
+  "giraffe": 50000,
+  "elephant": 50000
 }
 
 export class Animal extends Entity {
