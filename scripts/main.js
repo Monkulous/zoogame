@@ -43,16 +43,6 @@ addVisitor(100, { x: 0, y: 0 })
 
 let lastTime = Date.now();
 
-/*
-let tunnelImage = new Image
-tunnelImage.src = "images/blocks/tunnel.png"
-
-tunnelImage.onload = () => {
-    let tunnel = new Collision("tunnel", { x: -(tunnelImage.width * 35 / 9) / 2 + 35, y: -(tunnelImage.height * 35 / 9) }, { x: (tunnelImage.width * 35 / 9), y: (tunnelImage.height * 35 / 9) }, tunnelImage, true, { x: (tunnelImage.width * 35 / 9), y: (tunnelImage.height * 35 / 9) })
-    collisions["foreground"].push(tunnel)
-}
-*/
-
 function update(ctx) { //draws each frame
     let deltaTime = (Date.now() - lastTime) / 1000; //time from last frame in seconds
 
@@ -114,28 +104,6 @@ function calculateZooStats(collisions) {
     zoo.numAnimalTypes = animalTypes.length
 
     zoo.rating = (Math.min(5, ((zoo.totalHappiness / 150) * zoo.averageHappiness / 100) * zoo.numAnimalTypes))
-
-
-    visitors.forEach((visitor) => {
-        if (visitor instanceof EscapedAnimal) {
-            numEscapedAnimals += 1
-        }
-    })
-
-    zoo.numEscapedAnimals = numEscapedAnimals
-
-    if (zoo.numEscapedAnimals > 0) {
-        zoo.rating = 0
-        visitors.forEach((visitor) => {
-            visitor.baseMovementSpeed = 500
-            visitor.waitTime = 0
-            visitor.say(ctx)
-        })
-    } else {
-        visitors.forEach((visitor) => {
-            visitor.baseMovementSpeed = 100
-        })
-    }
 }
 
 function calculateZooProfit() {
