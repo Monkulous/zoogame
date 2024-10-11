@@ -17,7 +17,7 @@ export let state = {
 };
 
 export let zoo = {
-    money: 20000,
+    money: 200000,
     time: 600,
     timeSpeed: 1.024,
     totalHappiness: 0,
@@ -104,6 +104,27 @@ function calculateZooStats(collisions) {
     zoo.numAnimalTypes = animalTypes.length
 
     zoo.rating = (Math.min(5, ((zoo.totalHappiness / 150) * zoo.averageHappiness / 100) * zoo.numAnimalTypes))
+
+    visitors.forEach((visitor) => {
+        if (visitor instanceof EscapedAnimal) {
+            numEscapedAnimals += 1
+        }
+    })
+
+    zoo.numEscapedAnimals = numEscapedAnimals
+
+    if (zoo.numEscapedAnimals > 0) {
+        zoo.rating = 0
+        visitors.forEach((visitor) => {
+            visitor.baseMovementSpeed = 500
+            visitor.waitTime = 0
+            visitor.say(ctx)
+        })
+    } else {
+        visitors.forEach((visitor) => {
+            visitor.baseMovementSpeed = 100
+        })
+    }
 }
 
 function calculateZooProfit() {
