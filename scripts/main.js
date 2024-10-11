@@ -1,5 +1,5 @@
 import { player } from "./player.js";
-import { updateAllCollisions, loadCollisions, Enclosure } from "./collisions.js";
+import { updateAllCollisions, loadCollisions, Enclosure, Collision } from "./collisions.js";
 import { checkBuild, enclosureSources } from "./build.js";
 import { clearView, translate, displayInfo } from "./canvasUtils.js"
 import { addVisitor, EscapedAnimal } from "./visitor.js";
@@ -42,6 +42,16 @@ export let visitors = []
 addVisitor(100, { x: 0, y: 0 })
 
 let lastTime = Date.now();
+
+/*
+let tunnelImage = new Image
+tunnelImage.src = "images/blocks/tunnel.png"
+
+tunnelImage.onload = () => {
+    let tunnel = new Collision("tunnel", { x: -(tunnelImage.width * 35 / 9) / 2 + 35, y: -(tunnelImage.height * 35 / 9) }, { x: (tunnelImage.width * 35 / 9), y: (tunnelImage.height * 35 / 9) }, tunnelImage, true, { x: (tunnelImage.width * 35 / 9), y: (tunnelImage.height * 35 / 9) })
+    collisions["foreground"].push(tunnel)
+}
+*/
 
 function update(ctx) { //draws each frame
     let deltaTime = (Date.now() - lastTime) / 1000; //time from last frame in seconds

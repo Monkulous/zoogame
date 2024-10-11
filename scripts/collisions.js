@@ -75,7 +75,7 @@ export function sortCollisions(collisions) { //makes it so that collisions are d
   return collisions;
 }
 
-class Collision extends GameObject {
+export class Collision extends GameObject {
   constructor(type, position, imageSize, image, hasCollisions, collisionSize) {
     super(type, image, position, imageSize, collisionSize)
     this.hasCollisions = hasCollisions;
