@@ -17,7 +17,7 @@ export let state = {
 };
 
 export let zoo = {
-    money: 20000000,
+    money: 20000,
     time: 600,
     timeSpeed: 1.024,
     totalHappiness: 0,
