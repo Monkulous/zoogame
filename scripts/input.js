@@ -44,6 +44,10 @@ addEventListener("keydown", ({ key, repeat }) => {
   }
 });
 
+addEventListener(("click"), () => {
+  state.click = true
+})
+
 addEventListener("keyup", ({ key }) => {
   if (pressedKeys.includes(key.toLowerCase())) {
     pressedKeys.splice(pressedKeys.indexOf(key.toLowerCase()), 1)
