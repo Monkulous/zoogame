@@ -69,16 +69,7 @@ function gatherBuildInfo(collisions, state) { //this function is run when an enc
   let buildImageForeground = new Image()
   buildImageForeground.src = enclosureSources[buildType]["foreground"]
 
-
-  let location;
-
-  const isTouchScreen = window.matchMedia("(pointer: coarse)").matches; //this checks if the user is using a touchscreen device.
-
-  if (isTouchScreen) {
-    location = state.click ? "foreground" : "temporary"
-  } else {
-    location = leftMousePressed ? "foreground" : "temporary" //will store the location in collisions where the enclosure is places (foreground - on the ground, temporary - holds the transparent enclosure, showing the user where it will be placed)
-  }
+  let location = leftMousePressed ? "foreground" : "temporary" //will store the location in collisions where the enclosure is places (foreground - on the ground, temporary - holds the transparent enclosure, showing the user where it will be placed)
 
 
   collisions = placeBuilding(player, collisions, state.zoom, buildType, buildImageBackground, buildImageForeground, location); //place the enclosure, using the values gathered.

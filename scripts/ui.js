@@ -169,7 +169,6 @@ function closeMenu(menuType) {
 
 function startBuilding(buildType, money) {
   menuExitButton()
-  state.click = false
   if (zoo.money >= money) {
     zoo.money -= money
     UIContainer.classList.add("disabledButton")

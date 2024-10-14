@@ -112,19 +112,6 @@ function calculateZooStats(collisions) {
     })
 
     zoo.numEscapedAnimals = numEscapedAnimals
-
-    if (zoo.numEscapedAnimals > 0) {
-        zoo.rating = 0
-        visitors.forEach((visitor) => {
-            visitor.baseMovementSpeed = 500
-            visitor.waitTime = 0
-            visitor.say(ctx)
-        })
-    } else {
-        visitors.forEach((visitor) => {
-            visitor.baseMovementSpeed = 100
-        })
-    }
 }
 
 function calculateZooProfit() {
