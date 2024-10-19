@@ -13,7 +13,10 @@ ctx.fillStyle = "#FFFFFF";
 
 export let state = {
     zoom: 1,
-    click: false //only true the frame when the left mouse button is released
+    click: false, //only true the frame when the left mouse button is released
+    frames: 0,
+    totalTime: 0,
+    fps: 0
 };
 
 export let zoo = {
@@ -50,6 +53,7 @@ function update(ctx) { //draws each frame
 
     zoo.time += deltaTime * zoo.timeSpeed
 
+    calculateFPS(deltaTime)
     calculateZooProfit()
 
     clearView(state); //clears the canvas for a new frame
@@ -118,6 +122,18 @@ function calculateZooProfit() {
     let hours = (zoo.time / 60) % 24
     if (hours >= 10 && hours < 17) {
         zoo.money += ((zoo.rating / 2) * zoo.timeSpeed) * Math.exp(-1 / 5 * (hours - 10))
+    }
+}
+
+function calculateFPS(deltaTime) {
+    state.totalTime += deltaTime
+    state.frames += 1
+    let framesForAverage = 50
+    if (state.frames >= framesForAverage) {
+        state.frames %= framesForAverage
+        state.totalTime = 0
+    } else {
+        state.fps = state.frames / state.totalTime
     }
 }
 

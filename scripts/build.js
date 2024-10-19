@@ -16,6 +16,10 @@ export const buildStates = {
   mediumEnclosure: false
 };
 
+export const buildClick = {
+  UIClick: false
+}
+
 export const enclosureSources = {
   smallEnclosure: {
     background: "images/blocks/smallEnclosureBackgroundOther.png",
@@ -69,8 +73,8 @@ function gatherBuildInfo(collisions, state) { //this function is run when an enc
   let buildImageForeground = new Image()
   buildImageForeground.src = enclosureSources[buildType]["foreground"]
 
-  let location = leftMousePressed ? "foreground" : "temporary" //will store the location in collisions where the enclosure is places (foreground - on the ground, temporary - holds the transparent enclosure, showing the user where it will be placed)
-
+  let location = (state.click && !buildClick.UIClick) ? "foreground" : "temporary" //will store the location in collisions where the enclosure is places (foreground - on the ground, temporary - holds the transparent enclosure, showing the user where it will be placed)
+  buildClick.UIClick = false
 
   collisions = placeBuilding(player, collisions, state.zoom, buildType, buildImageBackground, buildImageForeground, location); //place the enclosure, using the values gathered.
   return collisions;

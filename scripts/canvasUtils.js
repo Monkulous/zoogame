@@ -35,6 +35,7 @@ export function displayInfo(deltaTime, player, state, zoo) {
   ctx.font = "50px Silkscreen";
   ctx.textAlign = "left"
   ctx.fillText("£" + Math.floor(zoo.money), 140, 50, 300);
+  ctx.fillText("FPS: " + Math.floor(state.fps), 140, 190, 300);
   ctx.textAlign = "center"
   ctx.font = "30px Silkscreen";
   ctx.fillText("x" + Math.round(zoo.timeSpeed * 2) / 2, canvas.width - 110, 87, 300);

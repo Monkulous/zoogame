@@ -1,4 +1,4 @@
-import { buildStates, resetBuildingUI, enclosureSources } from "./build.js"
+import { buildStates, resetBuildingUI, enclosureSources, buildClick } from "./build.js"
 import { addAnimal, createAnimal, petAnimals } from "./collisions.js"
 import { zoo, collisions, state } from "./main.js"
 import { player } from "./player.js"
@@ -173,6 +173,7 @@ function startBuilding(buildType, money) {
     zoo.money -= money
     UIContainer.classList.add("disabledButton")
     buildStates[buildType] = true
+    buildClick["UIClick"] = true
     document.body.style.cursor = "url('images/buildCursor.png') 0 27, auto"
   } else {
     player.say("I can't afford this", 100)
