@@ -196,11 +196,13 @@ export class Enclosure extends Collision { //this will have a list of the animal
     //number of animals in enclosure. 2 for small. 4 for medium. 6 for big one.
   }
   animalsEscape() {
+    /*
     this.animals.forEach((animal) => {
       createAnimal(animal.name, this, "escaped", animal.position)
       animals.splice(animals.indexOf(animal), 1)
     })
     this.animals = []
+    */
   }
 };
 
@@ -239,12 +241,13 @@ export function createAnimal(name, enclosure, type, position) {
   let animalImageLeft = new Image()
   animalImageLeft.src = "images/" + name + "Left.png"
   let animalImages = { left: [animalImageLeft], right: [animalImageRight] }
-  console.log(animalImageRight.src)
 
   if (type === "animal") {
-    let animal = new Animal(name, animalImages, animalSizes[name].imageSize, animalSizes[name].collisionSize, enclosure)
-    enclosure.animals.push(animal)
-    animals.push(animal)
+    for (let i = 0; i < 1000; i++) {
+      let animal = new Animal(name, animalImages, animalSizes[name].imageSize, animalSizes[name].collisionSize, enclosure)
+      enclosure.animals.push(animal)
+      animals.push(animal)
+    }
   } else if (type === "escaped") {
     let animal = new EscapedAnimal(name, animalImages, animalSizes[name].imageSize, animalSizes[name].collisionSize, position)
     animal.startPositionCoordinates = { x: 0, y: 0 }
